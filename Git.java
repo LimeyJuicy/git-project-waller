@@ -94,10 +94,21 @@ public class Git {
         indexReader.close();
 
         indexLines.add(entry);
-        StringBuilder newIndex = new StringBuilder(indexLines.get(0));
-        for (int i = 1; i < indexLines.size(); i++) {
-            newIndex.append("\n" + indexLines.get(i));
+        //the new index maker originally called on indexlines(0), which throws an indexoutofbounds when there isnt anything in the index. fixed.
+        StringBuilder newIndex = new StringBuilder();
+
+        for (String line : indexLines) {
+            if (newIndex.length() > 0) {
+                newIndex.append("\n");
+            }
+            newIndex.append(line);
         }
+
+        if (newIndex.length() > 0) {
+            newIndex.append("\n");
+        }
+        newIndex.append(entry);
+
         Files.writeString(indexPath, newIndex.toString());
     }
 
@@ -253,7 +264,6 @@ public class Git {
         StringBuilder commitContent = new StringBuilder();
 
         commitContent.append("tree: ").append(treeHash).append("\n");
-
 
         if (!parentHash.isEmpty()) {
             commitContent.append("parent: ")
