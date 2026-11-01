@@ -228,14 +228,75 @@ public class Git {
         workingList.addAll(replacingList);
     }
 
-    public static void main(String[] args) {
-        Git repository = new Git();
+    // public static void main(String[] args) {
+    // Git repository = new Git();
+
+    // try {
+    // repository.makeGitRepository();
+    // createTree("");
+    // } catch (IOException e) {
+    // System.err.println("Something happened: " + e.getMessage());
+    // }
+    // }
+
+    public static String createCommit(String author, String message)
+            throws IOException {
+
+        // build the tree and its hash
+        String treeHash = createTree("");
+
+        // read head to get the previous commit hash
+        Path headPath = Path.of("git", "HEAD");
+        String parentHash = Files.readString(headPath).trim();
+
+        // build the commit
+        StringBuilder commitContent = new StringBuilder();
+
+        commitContent.append("tree: ").append(treeHash).append("\n");
+
+
+        if (!parentHash.isEmpty()) {
+            commitContent.append("parent: ")
+                    .append(parentHash)
+                    .append("\n");
+        }
+
+        commitContent.append("author: ").append(author).append("\n");
+        commitContent.append("date: ")
+                .append(java.time.LocalDateTime.now())
+                .append("\n");
+        commitContent.append("message: ").append(message).append("\n");
+        commitContent.append("\n");
+
+        String content = commitContent.toString();
+
+        // sha hash of the commit
+        MessageDigest digest;
 
         try {
-            repository.makeGitRepository();
-            createTree("");
-        } catch (IOException e) {
-            System.err.println("Something happened: " + e.getMessage());
+            digest = MessageDigest.getInstance("SHA-1");
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-1 is not available", e);
         }
+
+        byte[] hashBytes = digest.digest(
+                content.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        String commitHash = HexFormat.of().formatHex(hashBytes);
+
+        // now write the commit object.
+        Path commitPath = Path.of("git", "objects", commitHash);
+        Files.writeString(
+                commitPath,
+                content,
+                java.nio.charset.StandardCharsets.UTF_8);
+
+        // update head
+        Files.writeString(
+                headPath,
+                commitHash,
+                java.nio.charset.StandardCharsets.UTF_8);
+
+        return commitHash;
     }
 }
